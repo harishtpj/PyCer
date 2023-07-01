@@ -58,7 +58,7 @@ class RawString:
 
 
 class DeclarationVariableString(RawString):
-    """Класс управления параметрами объявления переменной"""
+    """Variable Declaration Parameter Control Class"""
     def __init__(self, annotation: Annotation, *args):
         super().__init__(*args)
         self.annotation = annotation
@@ -82,15 +82,16 @@ class DeclarationVariableString(RawString):
 
 class TranslatorC:
     """
-    > Если подключаемый файл указан в <>, то поиск будет происходить в стандартных каталогах,
-      предназначенных для хранения заголовочных файлов.
-      В случае, если подключаемый файл заключен в двойные кавычки, поиск будет происходить в текущем рабочем каталоге.
-      Если файл не найден, то поиск продолжается в стандартных каталогах
-    Источник: http://www.c-cpp.ru/books/include
-    Подробнее: https://www.opennet.ru/docs/RUS/cpp/cpp-4.html
+    If the included file is specified within <>, the search will occur in the standard directories intended 
+    for storing header files. In case the included file is enclosed in double quotes, the search will 
+    take place in the current working directory. If the file is not found, the search continues in 
+    the standard directories.
 
-    Поэтому в большинстве случаев импорт модуля будет транслироваться в импорт пользовательскго модуля, чтобы поведение
-    препроцессора C было схожим с интрепретатором Python
+    Source: http://www.c-cpp.ru/books/include
+    More details: https://www.opennet.ru/docs/RUS/cpp/cpp-4.html
+
+    Therefore, in most cases, importing a module will be translated into importing a user module, 
+    so that the behavior of the C preprocessor is similar to that of the Python interpreter.
     """
     STR_INCLUDE_USER_MODULE = '#include "{parent_path}{module_name}.h"'
     STR_INCLUDE_STD_MODULE = '#include <{module_name}.h>'
@@ -165,7 +166,7 @@ class TranslatorC:
     def parse_annotation(self, annotation: str):
         params = {'array_sizes': []}
         parts = annotation.split('__')
-        while parts and parts[-1].isdigit():  # TODO:   убедиться, что метод возвращает Истину лишь для арабских цифр
+        while parts and parts[-1].isdigit():  # TODO: Make sure that the method returns True only for Arabic numerals.
             params['array_sizes'].append(parts.pop())
 
         params['array_sizes'].reverse()
@@ -174,7 +175,7 @@ class TranslatorC:
             parts.pop()
             params['link'] = True
 
-        #if parts and parts[-1] in ('int', 'char'):  # TODO: Перечислить нормальные типы и вынести их в константу
+        #if parts and parts[-1] in ('int', 'char'):  # TODO: List the primitive types and extract them into a constant.
         if parts:
             params['type'] = ' '.join(parts)
         else:
@@ -376,9 +377,9 @@ class TranslatorC:
         self.write(';\n')
 
     def process_multi_return(self, expressions):
-        # TODO: Добавить аргументов к струткуре
-        # TODO: Объявление структуры
-        # TODO: Изменить аннотацию типа функции (struct function_mys)
+        # TODO: Add arguments to the structure
+        # TODO: Declare the structure
+        # TODO: Modify the function's type annotation (struct function_mys)
         structure_name = f'{self.current_function_name}_mys'
         variable_name = f'_{structure_name}'
         self.process_init_variable(name=variable_name, value_expr=expressions, annotation=f'struct__{structure_name}')

@@ -2,6 +2,8 @@ import ast
 from typing import Optional
 
 from py2c.exceptions import InvalidAnnotationException, NoneIsNotAllowedException, SourceCodeException
+from py2c.translator_c import TranslatorC
+
 
 
 def convert_op(node):
@@ -87,7 +89,7 @@ def convert_unary_op(node):
 
 
 def convert_annotation(annotation_node, parent_node) -> Optional[str]:
-    # # закомментирован, так как переменные могут быть объявлены в C-библиотеках
+    # Commented out, as variables can be declared in C libraries.
     # if not allow_absent and annotation_node is None:
     #     raise SourceCodeException('annotation must be!', parent_node)
     if annotation_node is None:
