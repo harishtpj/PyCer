@@ -42,8 +42,6 @@ def gen_arg_parser() -> argparse.ArgumentParser:
     )
     return parser
 
-from io import StringIO
-from typing import Any
 
 def translate2C(source_code: str) -> str:
     """
@@ -62,14 +60,27 @@ def translate2C(source_code: str) -> str:
 
 
 def post_process(py2c_src: str) -> str:
+    """
+    Remove the leading whitespace before the string "c" in the given Python to C source code.
+
+    Args:
+        py2c_src (str): The Python to C source code.
+
+    Returns:
+        str: The modified Python to C source code.
+    """
     pattern = r"([ ]*)\"c\s*(.*?)\";"
-    replacement = r"\1\2;"
-    result = re.sub(pattern, replacement, py2c_src, count=0)
+    result = re.sub(pattern, r"\1\2;", py2c_src, count=0)
+
+    pattern = r"/\*\s*c\s*(.*?)\s*\*/"
+    result = re.sub(pattern, r"\1\n", result, flags=re.DOTALL, count=0)
+    result = "extern \"C\" {\n" + result + "\n}\n"
+
     return result
 
 if __name__ == "__main__":
     args = gen_arg_parser().parse_args()
-    cfname = args.File[:-3] + '.c'
+    cfname = args.File[:-3] + '.cpp'
     cflags = ' '.join(args.cflags)
     cfname = f"_{cfname}" if not args.source else cfname
 
@@ -81,7 +92,7 @@ if __name__ == "__main__":
         f.write(post_process(py2c_src))
 
     if not args.source:
-        if os.system(f"gcc {cfname} -o {args.File[:-3]} {cflags}") != 0:
+        if os.system(f"g++ {cfname} -o {args.File[:-3]} {cflags}") != 0:
             os.remove(cfname)
             exit(-1)
         os.remove(cfname)
