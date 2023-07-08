@@ -4,6 +4,7 @@ import argparse, os, re
 from io import StringIO
 from py2c.bytecode_walker import translate
 from py2c.translator_c import TranslatorC
+from py2c.chelpers import cpprelude
 
 def gen_arg_parser() -> argparse.ArgumentParser:
     """
@@ -76,7 +77,7 @@ def post_process(py2c_src: str) -> str:
     result = re.sub(pattern, r"\1\n", result, flags=re.DOTALL, count=0)
     result = "extern \"C\" {\n" + result + "\n}\n"
 
-    return result
+    return cpprelude + result
 
 if __name__ == "__main__":
     args = gen_arg_parser().parse_args()
