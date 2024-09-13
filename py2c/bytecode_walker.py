@@ -95,6 +95,11 @@ def convert_annotation(annotation_node, parent_node) -> Optional[str]:
     if annotation_node is None:
         return
 
+    try:
+        annotation_node.id = annotation_node.id.replace("str", "string")
+    except:
+        pass
+
     annotation_node.custom_ignore = True
     if isinstance(annotation_node, ast.Name):
         return annotation_node.id

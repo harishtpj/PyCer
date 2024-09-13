@@ -3,24 +3,25 @@ from typing import Optional, List, Tuple, Union
 
 from py2c.exceptions import NoneIsNotAllowedException, SourceCodeException
 
+class Annotation:
+    type: str
+    array_sizes = None
+    link = False
+    arr = False
+    arrL = 0
 
-if version_info.minor > 6:
-    from dataclasses import dataclass, field
+    def __init__(self, **kwargs):
+        for n, v in kwargs.items():
+            setattr(self, n, v)
+        t = self.type.split("_")
 
-    @dataclass
-    class Annotation:
-        type: str
-        array_sizes: List[str] = field(default_factory=list)
-        link: bool = False
-else:
-    class Annotation:
-        type: str
-        array_sizes = None
-        link = False
-
-        def __init__(self, **kwargs):
-            for n, v in kwargs.items():
-                setattr(self, n, v)
+        for attr in t:
+            if attr.startswith("ARR"):
+                attr = attr.replace("ARR","")
+                self.arr = True
+                self.arrL = attr
+                self.type = self.type[:-(4+len(attr))]
+                # self.type += "["+attr+"]"
 
 
 class RawString:
@@ -62,6 +63,8 @@ class DeclarationVariableString(RawString):
     def __init__(self, annotation: Annotation, *args):
         super().__init__(*args)
         self.annotation = annotation
+        if self.annotation.arr:
+            self.name += "["+annotation.arrL+"]"
 
     def __str__(self):
         variable_type = self.variable_data.get('variable_type')
@@ -253,6 +256,20 @@ class TranslatorC:
         if docstring_comment:
             self.process_multiline_comment(docstring_comment)
 
+        t = annotation.split("_")
+        for attr in t:
+            if attr.startswith("ARR"):
+                attr = attr.replace("ARR","")
+                annotation = annotation[:-(4+len(attr))]
+                annotation += "["+attr+"]"
+
+        for i,arg in enumerate(pos_args):
+            t = arg[0].split("_")
+            for attr in t:
+                if attr.startswith("ARR"):
+                    attr = attr.replace("ARR","")
+                    pos_args[i] = (arg[0][:-(4+len(attr))], pos_args[i][1]+("["+attr+"]"))
+
         self.write(f'{self.ident}{annotation} {name}(')
         str_args = [f'{annotation_arg} {name_arg}' for annotation_arg, name_arg in pos_args]
         self.write(', '.join(str_args) if pos_args else 'void')
@@ -286,38 +303,13 @@ class TranslatorC:
 
     def process_call_function(self, name, pos_args):
         self.walk(name)
+        self.write('(')
+        for pos_arg_index, pos_arg in enumerate(pos_args, 1):
+            self.walk(pos_arg)
+            if pos_arg_index < len(pos_args):
+                self.write(', ')
 
-        if self.raw_strings[-1] == 'print':
-            self.raw_imports.add(self.STR_INCLUDE_MODULE_STDIO)
-            self.raw_strings[-1] = 'printf'
-
-            if not pos_args:
-                self.write('("\\n")')
-            elif len(pos_args) == 1:
-                self.write('(')
-                self.walk(pos_args[0])
-                last_row = self.raw_strings[-1]
-                if last_row.endswith('"'):
-                    self.raw_strings.pop()
-                    self.write('{}\\n"'.format(last_row[:-1]))
-
-                self.write(')')
-            else:
-                self.write('(')
-                for pos_arg_index, pos_arg in enumerate(pos_args, 1):
-                    self.walk(pos_arg)
-                    if pos_arg_index < len(pos_args):
-                        self.write(', ')
-
-                self.write(')')
-        else:
-            self.write('(')
-            for pos_arg_index, pos_arg in enumerate(pos_args, 1):
-                self.walk(pos_arg)
-                if pos_arg_index < len(pos_args):
-                    self.write(', ')
-
-            self.write(')')
+        self.write(')')
 
     def process_constant(self, value, parent_node):
         if value is None:
@@ -532,7 +524,7 @@ class TranslatorC:
         self.write('}')
 
     def process_for_function(self, name: str, body, function_name, args):
-        self.write(f'{self.ident}for ({name}=')
+        self.write(f'{self.ident}for (int {name}=')
         if len(args) >= 2:
             self.walk(args[0])
         else:

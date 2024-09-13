@@ -90,6 +90,9 @@ if __name__ == "__main__":
 
     with open(cfname, 'w') as f:
         py2c_src = translate2C(source_code)
+
+        py2c_src = py2c_src.replace("PTR", "*")
+
         f.write(post_process(py2c_src))
 
     if not args.source:
